@@ -1,0 +1,30 @@
+//Pregel pagerank
+
+val resetProb  = .15
+val initialMessage = 0.0
+val numIter = 10
+
+
+//Now the vertices in initialGraph are assigned initial PageRank 1.0, and the edges in initialGraph store the out-degree information. These operations can be completed in one-line code:
+
+val initialGraph: Graph[Double, Double] = graph
+  .outerJoinVertices(graph.outDegrees) {
+    (vid, vdata, deg) => deg.getOrElse(0)
+  }
+  .mapTriplets(e => 1.0 / e.srcAttr)
+  .mapVertices((id, attr) => 1.0)
+  
+initialGraph.vertices.take(10)
+  
+//Assume val initialMessage = 0.0, the number of iterations val numIter = 100 (you can take a smaller value), and the damping factor val resetProb = 0.15 [1]. Other message handlers are programmed according to the PageRank algorithm:
+
+def vertexProgram(id: VertexId, attr: Double, msgSum: Double): Double =
+  resetProb + (1.0 - resetProb) * msgSum
+def sendMessage(edge: EdgeTriplet[Double, Double]): Iterator[(VertexId, Double)] =
+  Iterator((edge.dstId, edge.srcAttr * edge.attr))
+def messageCombiner(a: Double, b: Double): Double = a + b
+
+val pagerankGraph = Pregel(initialGraph, initialMessage, numIter)(
+    vertexProgram, sendMessage, messageCombiner)
+
+initialGraph.vertices.map(_.swap).takeOrdered(10)
