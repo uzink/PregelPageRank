@@ -1,11 +1,32 @@
-//Pregel pagerank
+///////////////////////
+//Sample data set
+//////////////////////
+
+// Create an RDD for the vertices
+val users: RDD[(VertexId, (String, String))] =
+  sc.parallelize(Array((3L, ("rxin", "student")), (7L, ("jgonzal", "postdoc")),
+                       (5L, ("franklin", "prof")), (2L, ("istoica", "prof"))))
+// Create an RDD for edges
+val relationships: RDD[Edge[String]] =
+  sc.parallelize(Array(Edge(3L, 7L, "collab"),    Edge(5L, 3L, "advisor"),
+                       Edge(2L, 5L, "colleague"), Edge(5L, 7L, "pi")))
+                       
+// Define a default user in case there are relationship with missing user
+val defaultUser = ("John Doe", "Missing")
+// Build the initial Graph
+val graph = Graph(users, relationships, defaultUser)
+
+///////////////////////
+//Pregel PageRank
+//////////////////////
+
+//Parameters
 
 val resetProb  = .15
 val initialMessage = 0.0
 val numIter = 10
 
-
-//Now the vertices in initialGraph are assigned initial PageRank 1.0, and the edges in initialGraph store the out-degree information. These operations can be completed in one-line code:
+//Now the vertices in initialGraph are assigned initial PageRank 1.0, and the edges in initialGraph store the out-degree information:
 
 val initialGraph: Graph[Double, Double] = graph
   .outerJoinVertices(graph.outDegrees) {
@@ -16,7 +37,7 @@ val initialGraph: Graph[Double, Double] = graph
   
 initialGraph.vertices.take(10)
   
-//Assume val initialMessage = 0.0, the number of iterations val numIter = 100 (you can take a smaller value), and the damping factor val resetProb = 0.15 [1]. Other message handlers are programmed according to the PageRank algorithm:
+//Assume val initialMessage = 0.0, the number of iterations val numIter = 10 (you can take a smaller value), and the damping factor val resetProb = 0.15 [1]. Other message handlers are programmed according to the PageRank algorithm:
 
 def vertexProgram(id: VertexId, attr: Double, msgSum: Double): Double =
   resetProb + (1.0 - resetProb) * msgSum
